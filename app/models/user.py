@@ -7,11 +7,10 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100))
-    email = Column(String(100), unique=True, index=True)
-    password = Column(String(100))
-    phone = Column(String(15))
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    email = Column(String(100), unique=True, index=True, nullable=False)
+    password = Column(String(100), nullable=False)
+    phone = Column(String(15), unique=True, nullable=False)
     role_id = Column(Integer, ForeignKey("roles.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
 
-    role = relationship("Role", backref="users")
