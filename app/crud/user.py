@@ -12,6 +12,13 @@ def create_user(db: Session, user_data: UserCreate):
 def get_user(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()
 
+def get_user_by_email_or_phone(db: Session, email: str = None, phone: str = None):
+    if email:
+        return db.query(User).filter(User.email == email).first()
+    if phone:
+        return db.query(User).filter(User.phone == phone).first()
+    return None
+
 def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(User).offset(skip).limit(limit).all()
 

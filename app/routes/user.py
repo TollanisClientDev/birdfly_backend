@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database.mysql import SessionLocal
 from app.schemas.user import UserCreate, UserOut
@@ -16,6 +16,22 @@ def get_db():
 @router.post("/", response_model=UserOut)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return user_crud.create_user(db, user)
+
+@router.get("/lookup", response_model=UserOut)
+def get_user_by_email_or_phone(
+    email: str = Query(default=None),
+    phone: str = Query(default=None),
+    db: Session = Depends(get_db)
+):
+    if not email and not phone:
+        raise HTTPException(status_code=400, detail="Must provide either email or phone.")
+
+    user = user_crud.get_user_by_email_or_phone(db, email=email, phone=phone)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    return user
 
 @router.get("/{user_id}", response_model=UserOut)
 def get_user(user_id: int, db: Session = Depends(get_db)):

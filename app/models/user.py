@@ -13,9 +13,3 @@ class User(Base):
     password = Column(String(100), nullable=False)
     role_id = Column(Integer, ForeignKey("roles.id"))
 
-    # Note: The 422 error is likely due to your Pydantic schema (in app/schemas/user.py)
-    # requiring 'email' and 'phone' fields. To allow null values, update your Pydantic
-    # schemas to make these fields Optional, e.g.:
-    # email: Optional[str] = None
-    # phone: Optional[str] = None
-
