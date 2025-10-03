@@ -5,7 +5,7 @@ from app.database.mysql import engine, Base
 from app.models import user, role, driver, trip, payment, feedback, subscription, referral 
 from app.routes import (
     user, driver, role, trip,
-    payment, feedback, subscription, referral, trip_log, search_data, live_trip
+    payment, feedback, subscription, referral, trip_log, search_data, live_trip, formality
 )  # you'll create this next
 
 
@@ -26,4 +26,5 @@ app.include_router(referral.router, prefix="/referrals", tags=["Referrals"])
 app.include_router(trip_log.router, prefix="/trip-logs", tags=["Trip Logs"])
 app.include_router(search_data.router, prefix="/search", tags=["Search History"])
 app.include_router(live_trip.router, prefix="/live-trip", tags=["Live Trip"])
+app.include_router(formality.router, prefix="/formalities", tags=["Formalities"])
 
