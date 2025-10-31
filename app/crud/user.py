@@ -1,9 +1,15 @@
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.user import UserCreate
+import hashlib
 
 def create_user(db: Session, user_data: UserCreate):
-    user = User(**user_data.dict())
+    data = user_data.dict()
+    pwd = data.get("password")
+    # If password is not already a 64-char hex (SHA-256), hash it
+    if not (isinstance(pwd, str) and len(pwd) == 64 and all(c in "0123456789abcdef" for c in pwd.lower())):
+        data["password"] = hashlib.sha256(pwd.encode("utf-8")).hexdigest()
+    user = User(**data)
     db.add(user)
     db.commit()
     db.refresh(user)

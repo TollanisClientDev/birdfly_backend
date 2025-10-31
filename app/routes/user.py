@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database.mysql import SessionLocal
-from app.schemas.user import UserCreate, UserOut
+from app.schemas.user import UserCreate, UserOut, UserLogin
+import hashlib
 from app.crud import user as user_crud
 
 router = APIRouter()
@@ -50,3 +51,22 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+@router.post("/login")
+def login(payload: UserLogin, db: Session = Depends(get_db)):
+    if not payload.email and not payload.phone:
+        raise HTTPException(status_code=400, detail="Must provide either email or phone.")
+
+    user = user_crud.get_user_by_email_or_phone(db, email=payload.email, phone=payload.phone)
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials.")
+
+    # Hash incoming plaintext password using SHA-256 to match stored scheme
+    incoming_hashed = hashlib.sha256(payload.password.encode("utf-8")).hexdigest()
+
+    # Support both hashed and legacy plaintext stored passwords during transition
+    if user.password not in (incoming_hashed, payload.password):
+        raise HTTPException(status_code=401, detail="Invalid credentials.")
+
+    return {"message": "Login successful"}
