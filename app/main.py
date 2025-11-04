@@ -7,6 +7,7 @@ from app.routes import (
     user, driver, role, trip,
     payment, feedback, subscription, referral, trip_log, search_data, live_trip, formality
 )  # you'll create this next
+from app.routes import uploads
 
 
 app = FastAPI()
@@ -15,6 +16,7 @@ app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
 # Add your routes
+app.include_router(uploads.router)
 app.include_router(user.router, prefix="/users", tags=["Users"])
 app.include_router(driver.router, prefix="/drivers", tags=["Drivers"])
 app.include_router(role.router, prefix="/roles", tags=["Roles"])
