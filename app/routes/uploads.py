@@ -115,23 +115,29 @@ def confirm_upload(payload: ConfirmIn):
 
 
 @router.post("/upload-proxy")
-async def upload_proxy(user_id: str, file: UploadFile = File(...)):
-    """
-    Backend-proxied upload: client POSTs file to this endpoint; backend uploads to S3.
-    Simpler for clients that can't do presigned PUTs (e.g., some RN setups).
-    """
+async def upload_proxy(
+    user_id: str,
+    doc_type: str = Query(..., description="Type of document (e.g., license, registration, insurance, profile, vechicle inspection)"),
+    file: UploadFile = File(...)
+):
     if not S3_BUCKET:
         raise HTTPException(status_code=500, detail="S3_BUCKET not configured")
 
-    # Basic content-type validation
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(status_code=400, detail="Content type not allowed")
 
-    # Optionally check file size by reading file.file (stream). Here we trust client but can check:
-    # file.file.seek(0, 2); size = file.file.tell(); file.file.seek(0)
-    # For safety, stream upload with upload_fileobj and don't load into memory.
+    # ✅ Folder (doc_type) validation
+    ALLOWED_DOC_TYPES = {"license", "registration", "insurance", "profile", "vechicle inspection"}
+    safe_doc_type = doc_type.lower().strip()
+    if safe_doc_type not in ALLOWED_DOC_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid document type '{doc_type}'. Allowed types: {', '.join(ALLOWED_DOC_TYPES)}"
+        )
 
-    key = _make_s3_key(user_id, file.filename)
+    ts = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
+    safe_filename = file.filename.replace(" ", "_").replace("/", "_")
+    key = f"drivers/{user_id}/{safe_doc_type}/{ts}_{safe_filename}"
 
     try:
         s3.upload_fileobj(
@@ -141,7 +147,7 @@ async def upload_proxy(user_id: str, file: UploadFile = File(...)):
             ExtraArgs={"ContentType": file.content_type, "ACL": "private"}
         )
     except ClientError as e:
-        raise HTTPException(status_code=500, detail=f"upload failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"S3 upload failed: {str(e)}")
     finally:
         try:
             file.file.close()
@@ -149,18 +155,24 @@ async def upload_proxy(user_id: str, file: UploadFile = File(...)):
             pass
 
     # Save metadata in Mongo
-    doc = {
+    doc_record = {
         "user_id": user_id,
-        "doc_type": "unknown",
+        "doc_type": safe_doc_type,
         "s3_key": key,
         "bucket": S3_BUCKET,
         "content_type": file.content_type,
-        "size": None,
         "uploaded_at": datetime.utcnow(),
-        "verified": False
+        "verified": False,
     }
-    res = mongo_db.driver_documents.insert_one(doc)
-    return {"ok": True, "key": key, "doc_id": str(res.inserted_id)}
+
+    mongo_db.driver_documents.insert_one(doc_record)
+
+    return {
+        "ok": True,
+        "key": key,
+        "doc_type": safe_doc_type,
+        "message": f"{safe_doc_type.capitalize()} uploaded successfully!"
+    }
 
 
 @router.get("/download-presign")
