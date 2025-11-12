@@ -117,7 +117,7 @@ def confirm_upload(payload: ConfirmIn):
 @router.post("/upload-proxy")
 async def upload_proxy(
     user_id: str,
-    doc_type: str = Query(..., description="Type of document (e.g., license, registration, insurance, profile, vechicle inspection)"),
+    doc_type: str = Query(..., description="Type of document (e.g., license, registration, insurance, profile, vehicle inspection)"),
     file: UploadFile = File(...)
 ):
     if not S3_BUCKET:
@@ -127,7 +127,7 @@ async def upload_proxy(
         raise HTTPException(status_code=400, detail="Content type not allowed")
 
     # ✅ Folder (doc_type) validation
-    ALLOWED_DOC_TYPES = {"license", "registration", "insurance", "profile", "vechicle inspection"}
+    ALLOWED_DOC_TYPES = {"license", "registration", "insurance", "profile", "vehicle inspection"}
     safe_doc_type = doc_type.lower().strip()
     if safe_doc_type not in ALLOWED_DOC_TYPES:
         raise HTTPException(
