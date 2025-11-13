@@ -1,16 +1,32 @@
 # app/schemas/driver.py
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
-class DriverCreate(BaseModel):
+
+class VehicleDetails(BaseModel):
+    make: Optional[str] = None
+    model: Optional[str] = None
+    year: Optional[str] = None
+    type: Optional[str] = None
+
+
+class DriverBase(BaseModel):
     user_id: int
-    license_number: Optional[str] = None
-    vehicle_number: Optional[str] = None
-    vehicle_type: Optional[str] = None
+    license_plate_number: Optional[str] = Field(None, alias="license_number")
+    social_security_number: Optional[str] = None
+    vehicle_details: Optional[VehicleDetails] = None
     is_available: Optional[bool] = True
 
-class DriverOut(DriverCreate):
+    class Config:
+        allow_population_by_field_name = True
+
+
+class DriverCreate(DriverBase):
+    pass
+
+
+class DriverOut(DriverBase):
     id: int
 
-    class Config:
+    class Config(DriverBase.Config):
         from_attributes = True
