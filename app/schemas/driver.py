@@ -1,19 +1,16 @@
+# app/schemas/driver.py
 from pydantic import BaseModel
 from typing import Optional
 
 class DriverCreate(BaseModel):
     user_id: int
-    license_number: str
-    vehicle_number: str
-    vehicle_type: str
+    license_number: Optional[str] = None
+    vehicle_number: Optional[str] = None
+    vehicle_type: Optional[str] = None
+    is_available: Optional[bool] = True
 
-class DriverOut(BaseModel):
+class DriverOut(DriverCreate):
     id: int
-    user_id: int
-    license_number: str
-    vehicle_number: str
-    vehicle_type: str
-    is_available: bool
 
     class Config:
         from_attributes = True

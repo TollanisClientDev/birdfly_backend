@@ -1,36 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException
+# app/routes/driver.py
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.database.mysql import SessionLocal
-from app.schemas.driver import DriverCreate, DriverOut
-from app.crud import driver as driver_crud
+from app import schemas, crud, models
+from app.database import get_db
 
-router = APIRouter()
+router = APIRouter(prefix="/drivers", tags=["Drivers"])
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+@router.post("/", response_model=schemas.DriverOut, status_code=status.HTTP_201_CREATED)
+def create_driver(details: schemas.DriverCreate, db: Session = Depends(get_db)):
+    # Optional: validate user exists
+    user = db.query(models.User).filter(models.User.id == details.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-@router.post("/", response_model=DriverOut)
-def create_driver(driver: DriverCreate, db: Session = Depends(get_db)):
-    return driver_crud.create_driver(db, driver)
+    created = crud.create_driver(db, details)
+    return created
 
-@router.get("/{driver_id}", response_model=DriverOut)
+@router.get("/{driver_id}", response_model=schemas.DriverOut)
 def get_driver(driver_id: int, db: Session = Depends(get_db)):
-    driver = driver_crud.get_driver(db, driver_id)
+    driver = crud.get_driver_by_id(db, driver_id)
     if not driver:
         raise HTTPException(status_code=404, detail="Driver not found")
     return driver
 
-@router.get("/", response_model=list[DriverOut])
-def list_drivers(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return driver_crud.get_all_drivers(db, skip, limit)
-
-@router.delete("/{driver_id}", response_model=DriverOut)
+@router.delete("/{driver_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_driver(driver_id: int, db: Session = Depends(get_db)):
-    driver = driver_crud.delete_driver(db, driver_id)
-    if not driver:
+    deleted = crud.delete_driver_by_id(db, driver_id)
+    if not deleted:
         raise HTTPException(status_code=404, detail="Driver not found")
-    return driver
+    # return 204 with no content
+    return
