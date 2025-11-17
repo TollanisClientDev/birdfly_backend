@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, 
 from pydantic import BaseModel
 import boto3
 from botocore.exceptions import ClientError
+from typing import List # your pymongo Database instance
 
 # Adjust this import to your project's mongo client wrapper
 # It should expose a `mongo_db` object (pymongo Database)
@@ -191,3 +192,33 @@ def presign_get_url(key: str = Query(...), expires_in: Optional[int] = Query(60)
     except ClientError as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {"url": url}
+
+@router.get("/alluploads/{user_id}", response_model=List[str], status_code=status.HTTP_200_OK)
+def list_uploaded_doc_types(user_id: str):
+    """
+    Return a list of distinct doc_type values uploaded by the given user_id.
+    Example response: ["license", "registration", "insurance"]
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    # use MongoDB distinct for efficiency
+    try:
+        doc_types = mongo_db.driver_documents.distinct("doc_type", {"user_id": user_id})
+    except Exception as e:
+        # log if you have logging, but return a 500 to client
+        raise HTTPException(status_code=500, detail="error reading upload records")
+
+    # optional: normalize/filter out empty values and keep allowed types only
+    ALLOWED_DOC_TYPES = {"license", "registration", "insurance", "profile", "vehicle_inspection"}
+    result = []
+    for d in doc_types:
+        if not d:
+            continue
+        d_norm = d.lower().replace(" ", "_")
+        if d_norm in ALLOWED_DOC_TYPES:
+            result.append(d_norm)
+
+    # return unique list (distinct already ensures uniqueness) — but preserve ordering
+    return result
+
