@@ -4,6 +4,7 @@ from datetime import datetime
 
 class TripCreate(BaseModel):
     user_id: int
+    user_uid: str
     driver_id: int
     pickup_location: str
     drop_location: str
@@ -13,6 +14,7 @@ class TripCreate(BaseModel):
 
 class TripOut(TripCreate):
     id: int
+    user_uid: str
     status: str
     created_at: datetime
 

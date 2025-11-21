@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app.models.trip import Trip
 from app.schemas.trip import TripCreate
@@ -12,6 +13,12 @@ def create_trip(db: Session, trip_data: TripCreate):
 
 def get_trip(db: Session, trip_id: int):
     return db.query(Trip).filter(Trip.id == trip_id).first()
+
+def get_trip_by_uid(db: Session, user_uid: str):
+    trip = db.query(Trip).filter(Trip.user_uid == user_uid).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    return trip
 
 def get_all_trips(db: Session):
     return db.query(Trip).all()

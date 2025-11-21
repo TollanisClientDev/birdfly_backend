@@ -34,6 +34,11 @@ def get_user_by_email_or_phone(
 
     return user
 
+@router.get("/uid/{uid}", response_model=UserOut)
+def get_user_by_uid_or_404(uid: str, db: Session = Depends(get_db)):
+    user = user_crud.user_from_uid(uid, db)
+    return user
+
 @router.get("/{user_id}", response_model=UserOut)
 def get_user(user_id: int, db: Session = Depends(get_db)):
     user = user_crud.get_user(db, user_id)

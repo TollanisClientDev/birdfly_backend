@@ -12,6 +12,7 @@ class VehicleDetails(BaseModel):
 
 class DriverBase(BaseModel):
     user_id: int
+    user_uid: str
     license_plate_number: Optional[str] = Field(None, alias="license_number")
     social_security_number: Optional[str] = None
     vehicle_details: Optional[VehicleDetails] = None

@@ -7,6 +7,7 @@ class Subscription(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    user_uid = Column(String(64), index=True, nullable=True)
     plan_name = Column(String(100))
     price = Column(DECIMAL(10, 2))
     start_date = Column(DateTime)

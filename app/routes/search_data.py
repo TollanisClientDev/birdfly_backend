@@ -28,9 +28,24 @@ def get_user_searches(user_id: int):
     data["_id"] = str(data["_id"])
     return data
 
+@router.get("/uid/{uid}")
+def get_user_searches_by_uid(uid: str):
+    data = search_data_collection.find_one({"uid": uid})
+    if not data:
+        raise HTTPException(status_code=404, detail="No search history")
+    data["_id"] = str(data["_id"])
+    return data
+
 @router.delete("/user/{user_id}")
 def delete_user_searches(user_id: int):
     result = search_data_collection.delete_one({"user_id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="No search history to delete")
+    return {"message": "Search history deleted"}
+
+@router.delete("/uid/{uid}")
+def delete_user_searches_by_uid(uid: str):
+    result = search_data_collection.delete_one({"uid": uid})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="No search history to delete")
     return {"message": "Search history deleted"}

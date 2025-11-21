@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, status
 from pydantic import BaseModel
 import boto3
 from botocore.exceptions import ClientError
@@ -31,21 +31,21 @@ def _sanitize_filename(name: str) -> str:
     return name.replace(" ", "_").replace("/", "_")
 
 
-def _make_s3_key(user_id: str, filename: str) -> str:
+def _make_s3_key(uid: str, filename: str) -> str:
     ts = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
     safe = _sanitize_filename(filename)
-    return f"drivers/{user_id}/{ts}_{safe}"
+    return f"drivers/{uid}/{ts}_{safe}"
 
 
 class ConfirmIn(BaseModel):
-    user_id: str
+    uid: str
     key: str
     doc_type: Optional[str] = "other"
 
 
 @router.get("/presign")
 def presign_put_url(
-    user_id: str = Query(...),
+    uid: str = Query(...),
     filename: str = Query(...),
     content_type: str = Query(...),
     expires_in: Optional[int] = Query(300)
@@ -60,7 +60,7 @@ def presign_put_url(
     if content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(status_code=400, detail="Content type not allowed")
 
-    key = _make_s3_key(user_id, filename)
+    key = _make_s3_key(uid, filename)
 
     try:
         url = s3.generate_presigned_url(
@@ -102,7 +102,7 @@ def confirm_upload(payload: ConfirmIn):
 
     # Save metadata in Mongo (collection: driver_documents)
     doc = {
-        "user_id": payload.user_id,
+        "uid": payload.uid,
         "doc_type": payload.doc_type,
         "s3_key": payload.key,
         "bucket": S3_BUCKET,
@@ -117,8 +117,8 @@ def confirm_upload(payload: ConfirmIn):
 
 @router.post("/upload-proxy")
 async def upload_proxy(
-    user_id: str,
-    doc_type: str = Query(..., description="Type of document (e.g., license, registration, insurance, profile, vehicle inspection)"),
+    uid: str = Form(...),
+    doc_type: str = Form(..., description="Type of document (e.g., license, registration, insurance, profile, vehicle_inspection)"),
     file: UploadFile = File(...)
 ):
     if not S3_BUCKET:
@@ -128,17 +128,17 @@ async def upload_proxy(
         raise HTTPException(status_code=400, detail="Content type not allowed")
 
     # ✅ Folder (doc_type) validation
-    ALLOWED_DOC_TYPES = {"license", "registration", "insurance", "profile", "vehicle inspection"}
-    safe_doc_type = doc_type.lower().strip()
+    ALLOWED_DOC_TYPES = {"license", "registration", "insurance", "profile", "vehicle_inspection"}
+    safe_doc_type = doc_type.lower().strip().replace(" ", "_")
     if safe_doc_type not in ALLOWED_DOC_TYPES:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid document type '{doc_type}'. Allowed types: {', '.join(ALLOWED_DOC_TYPES)}"
+            detail=f"Invalid document type '{doc_type}'. Allowed types: {', '.join(sorted(ALLOWED_DOC_TYPES))}"
         )
 
     ts = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
     safe_filename = file.filename.replace(" ", "_").replace("/", "_")
-    key = f"drivers/{user_id}/{safe_doc_type}/{ts}_{safe_filename}"
+    key = f"drivers/{uid}/{safe_doc_type}/{ts}_{safe_filename}"
 
     try:
         s3.upload_fileobj(
@@ -157,7 +157,7 @@ async def upload_proxy(
 
     # Save metadata in Mongo
     doc_record = {
-        "user_id": user_id,
+        "uid": uid,
         "doc_type": safe_doc_type,
         "s3_key": key,
         "bucket": S3_BUCKET,
@@ -193,18 +193,18 @@ def presign_get_url(key: str = Query(...), expires_in: Optional[int] = Query(60)
         raise HTTPException(status_code=500, detail=str(e))
     return {"url": url}
 
-@router.get("/alluploads/{user_id}", response_model=List[str], status_code=status.HTTP_200_OK)
-def list_uploaded_doc_types(user_id: str):
+@router.get("/alluploads/{uid}", response_model=List[str], status_code=status.HTTP_200_OK)
+def list_uploaded_doc_types(uid: str):
     """
-    Return a list of distinct doc_type values uploaded by the given user_id.
+    Return a list of distinct doc_type values uploaded by the given uid.
     Example response: ["license", "registration", "insurance"]
     """
-    if not user_id:
-        raise HTTPException(status_code=400, detail="user_id is required")
+    if not uid:
+        raise HTTPException(status_code=400, detail="uid is required")
 
     # use MongoDB distinct for efficiency
     try:
-        doc_types = mongo_db.driver_documents.distinct("doc_type", {"user_id": user_id})
+        doc_types = mongo_db.driver_documents.distinct("doc_type", {"uid": uid})
     except Exception as e:
         # log if you have logging, but return a 500 to client
         raise HTTPException(status_code=500, detail="error reading upload records")

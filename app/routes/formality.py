@@ -26,3 +26,10 @@ def get_formality(user_id: int, db: Session = Depends(get_db)):
     if not result:
         raise HTTPException(status_code=404, detail="Formalities not found.")
     return result
+
+@router.get("/uid/{uid}", response_model=FormalityOut)
+def get_formality_by_uid(uid: str, db: Session = Depends(get_db)):
+    result = formality_crud.get_formality_by_uid(db, uid)
+    if not result:
+        raise HTTPException(status_code=404, detail="Formalities not found.")
+    return result

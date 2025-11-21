@@ -13,6 +13,7 @@ class Payment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    user_uid = Column(String(64), index=True, nullable=True)
     trip_id = Column(Integer, ForeignKey("trips.id"))
     amount = Column(DECIMAL(10, 2))
     method = Column(String(50))

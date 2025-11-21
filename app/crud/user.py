@@ -2,6 +2,15 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.user import UserCreate
 import hashlib
+from fastapi import HTTPException, Depends
+from app.database.mysql import SessionLocal
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 def create_user(db: Session, user_data: UserCreate):
     data = user_data.dict()
@@ -17,6 +26,15 @@ def create_user(db: Session, user_data: UserCreate):
 
 def get_user(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()
+
+def get_user_by_uid_or_404(uid: str, db: Session):
+    user = db.query(User).filter(User.uid == uid).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User with uid not found")  # pyright: ignore[reportUndefined]
+    return user
+
+def user_from_uid(uid: str, db: Session = Depends(get_db)):
+    return get_user_by_uid_or_404(uid, db)
 
 def get_user_by_email_or_phone(db: Session, email: str = None, phone: str = None):
     if email:

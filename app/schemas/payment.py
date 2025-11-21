@@ -4,6 +4,7 @@ from datetime import datetime
 
 class PaymentCreate(BaseModel):
     user_id: int
+    user_uid: str
     trip_id: int
     amount: float
     method: str
@@ -11,6 +12,7 @@ class PaymentCreate(BaseModel):
 
 class PaymentOut(PaymentCreate):
     id: int
+    user_uid: str
     paid_at: Optional[datetime]
 
     class Config:

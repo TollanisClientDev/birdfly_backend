@@ -31,6 +31,13 @@ def get_driver(driver_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Driver not found")
     return driver
 
+@router.get("/uid/{uid}", response_model=DriverOut)
+def get_driver_by_uid(uid: str, db: Session = Depends(get_db)):
+    driver = driver_crud.get_driver_by_uid(db, uid)
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    return driver
+
 @router.delete("/{driver_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_driver(driver_id: int, db: Session = Depends(get_db)):
     deleted = driver_crud.delete_driver_by_id(db, driver_id)

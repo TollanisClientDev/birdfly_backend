@@ -6,6 +6,7 @@ class LoginFormality(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    user_uid = Column(String(64), index=True, nullable=True)
     notification = Column(Boolean, default=False)
     location = Column(Boolean, default=False)
     referral_code = Column(String(100), nullable=True)

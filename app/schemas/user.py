@@ -11,6 +11,7 @@ class UserCreate(BaseModel):
 
 class UserOut(BaseModel):
     id: int
+    uid: str
     first_name: str
     last_name: str
     email: Optional[str] = None
