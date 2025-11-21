@@ -4,6 +4,7 @@ from app.schemas.user import UserCreate
 import hashlib
 from fastapi import HTTPException, Depends
 from app.database.mysql import SessionLocal
+from app.utils.uid import make_uid
 
 def get_db():
     db = SessionLocal()
@@ -18,11 +19,14 @@ def create_user(db: Session, user_data: UserCreate):
     # If password is not already a 64-char hex (SHA-256), hash it
     if not (isinstance(pwd, str) and len(pwd) == 64 and all(c in "0123456789abcdef" for c in pwd.lower())):
         data["password"] = hashlib.sha256(pwd.encode("utf-8")).hexdigest()
-    user = User(**data)
-    db.add(user)
+    db_user = User(**data)
+    db.add(db_user)
+    db.flush()
+    generated_uid = make_uid(db_user.role_id, db_user.id)
+    db_user.uid = generated_uid
     db.commit()
-    db.refresh(user)
-    return user
+    db.refresh(db_user)
+    return db_user
 
 def get_user(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()

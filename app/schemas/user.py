@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class UserCreate(BaseModel):
     first_name: str
-    last_name: str
+    last_name: Optional[str]
     email: Optional[str] = None
     password: str
     phone: Optional[str] = None
@@ -11,9 +11,9 @@ class UserCreate(BaseModel):
 
 class UserOut(BaseModel):
     id: int
-    uid: str
+    uid: Optional[str]
     first_name: str
-    last_name: str
+    last_name: Optional[str]
     email: Optional[str] = None
     phone: Optional[str] = None
     role_id: int
