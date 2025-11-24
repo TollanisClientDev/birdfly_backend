@@ -74,4 +74,12 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
     if user.password not in (incoming_hashed, payload.password):
         raise HTTPException(status_code=401, detail="Invalid credentials.")
 
-    return {"message": "Login successful"}
+    return {
+        "user_uid": user.uid,
+        "id": user.id,
+        "email": user.email,
+        "phone": user.phone,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "role_id": user.role_id,
+    }
