@@ -5,7 +5,7 @@ from app.schemas.formality import FormalityCreate, FormalityOut
 def create_formality(db: Session, formality: FormalityCreate):
     formality_data = formality.model_dump()
     # Map 'uid' from schema to 'user_uid' in model
-    formality_data["user_uid"] = formality_data.pop("uid")
+    formality_data["user_uid"] = formality_data.pop("user_uid")
     db_formality = LoginFormality(**formality_data)
     db.add(db_formality)
     db.commit()
