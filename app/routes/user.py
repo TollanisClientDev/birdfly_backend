@@ -75,11 +75,11 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials.")
 
     return {
-        "user_uid": user.uid,
         "id": user.id,
-        "email": user.email,
-        "phone": user.phone,
+        "uid": user.uid,
         "first_name": user.first_name,
         "last_name": user.last_name,
+        "email": user.email,
+        "phone": user.phone,
         "role_id": user.role_id,
     }
